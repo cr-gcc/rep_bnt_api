@@ -14,4 +14,5 @@ Route::middleware('auth:api')->group(function () {
 	Route::post('/logout', [AuthController::class, 'logout']);
 	//	Ventas
 	Route::post('/sales/get-general-counts', [SaleController::class, 'getGeneralCounts']);
+	Route::post('/sales/search', [SaleController::class, 'search']);
 });
