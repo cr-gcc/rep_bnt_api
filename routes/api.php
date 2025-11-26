@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CampaignController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/version', [AuthController::class, 'version'])->name('version');
@@ -15,4 +16,6 @@ Route::middleware('auth:api')->group(function () {
 	//	Ventas
 	Route::post('/sales/get-general-counts', [SaleController::class, 'getGeneralCounts']);
 	Route::post('/sales/search', [SaleController::class, 'search']);
+	//	Campañas
+	Route::get('/campaigns', [CampaignController::class, 'index']);
 });

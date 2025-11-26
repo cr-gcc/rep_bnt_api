@@ -2,6 +2,8 @@
 
 namespace App\Helpers;
 
+use App\Models\Campaign;
+
 class CampaignsHelper
 {
 	public function __construct()
@@ -9,55 +11,33 @@ class CampaignsHelper
 		//
 	}
 
-	public static function campaignToBase($campign)
+	public static function campaignToBase($campaign)
 	{
-		$response_camps = [];
-		$camps = [
-			'captacion' => 'banorte_captacion_pvh',
-			'consumo' => 'banorte_consumo_pvh',
-			'nomina' => 'banorte_nomina_pvh',
-			'plenitud' => 'banorte_plenitud',
-			'pvh' => 'banorte_pvh',
-		];
-
-		if ($campign == "all") {
-			foreach ($camps as $camp) {
-				$response_camps[] = $camp;
-			}
-		} else {
-			$response_camps[] = $camps[$campign];
+		if ($campaign == "all") {
+			return Campaign::where('active', true)->pluck('db_name')->toArray();
 		}
 
-		return $response_camps;
+		$db = Campaign::where('name', $campaign)->where('active', true)->first();
+		return $db ? [$db->db_name] : [];
 	}
 
 	public static function baseToCampaign($db_name)
 	{
-		$camps = [
-			'banorte_captacion_pvh' => 'captacion',
-			'banorte_consumo_pvh' => 'consumo',
-			'banorte_nomina_pvh' => 'nomina',
-			'banorte_plenitud' => 'plenitud',
-			'banorte_pvh' => 'pvh'
-		];
-
-		return $camps[$db_name];
+		$campaign = Campaign::where('db_name', $db_name)->first();
+		return $campaign ? $campaign->name : null;
 	}
 
 	public static function campaignsById($campaigns)
 	{
-		$camps = ['banorte_captacion_pvh', 'banorte_consumo_pvh', 'banorte_nomina_pvh', 'banorte_plenitud', 'banorte_pvh'];
-		$response_camps = [];
-
-		$val = (int)$campaigns[0];
-		if ($val === 0) {
-			$response_camps = $camps;
-		} else {
-			for ($i = 0; $i < count($campaigns); $i++) {
-				$index = (int)$campaigns[$i] - 1;
-				$response_camps[$i] = $camps[$index];
-			}
+		// Si el primer elemento es 0, devolvemos todas las campañas activas
+		if (!empty($campaigns) && (int)$campaigns[0] === 0) {
+			return Campaign::where('active', true)->pluck('db_name')->toArray();
 		}
-		return $response_camps;
+
+		// Filtramos por ID y devolvemos los nombres de base de datos
+		return Campaign::whereIn('id', $campaigns)
+			->where('active', true)
+			->pluck('db_name')
+			->toArray();
 	}
 }
