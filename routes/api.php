@@ -18,4 +18,6 @@ Route::middleware('auth:api')->group(function () {
 	Route::post('/sales/search', [SaleController::class, 'search']);
 	//	Campañas
 	Route::get('/campaigns', [CampaignController::class, 'index']);
+	//	Estatus
+	Route::get('/statuses', [\App\Http\Controllers\Api\StatusController::class, 'index']);
 });
