@@ -16,6 +16,7 @@ Route::middleware('auth:api')->group(function () {
 	//	Ventas
 	Route::post('/sales/get-general-counts', [SaleController::class, 'getGeneralCounts']);
 	Route::post('/sales/search', [SaleController::class, 'search']);
+	Route::post('/sales/delete', [SaleController::class, 'delete']);
 	//	Campañas
 	Route::get('/campaigns', [CampaignController::class, 'index']);
 	//	Estatus
