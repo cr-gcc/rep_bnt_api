@@ -14,13 +14,23 @@ class AuthController extends Controller
 			'message' => "Reportería Banorte v0.1",
 		], 200);
 	}
-	// Login y asignar token en cookie
+	// Login y asignar token en cookie (acepta email o RFC)
 	public function login(Request $request)
 	{
-		$credentials = $request->only('email', 'password');
+		// Obtener el identificador (puede ser email o RFC/user)
+		$identifier = $request->input('email'); // Mantener compatibilidad con frontend
+		$password = $request->input('password');
 
+		// Intentar autenticación primero con email
+		$credentials = ['email' => $identifier, 'password' => $password];
+		
 		if (!Auth::attempt($credentials)) {
-			return response()->json(['message' => 'Credenciales inválidas'], 401);
+			// Si falla, intentar con el campo 'user' (RFC)
+			$credentials = ['user' => $identifier, 'password' => $password];
+			
+			if (!Auth::attempt($credentials)) {
+				return response()->json(['message' => 'Credenciales inválidas'], 401);
+			}
 		}
 
 		$user = Auth::user();

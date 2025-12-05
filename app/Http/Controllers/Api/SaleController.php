@@ -194,9 +194,9 @@ class SaleController extends Controller
 					$db->table('ventas')
 						->where('certificado', $item[1])
 						->delete();
-					$messages[] = 'Venta - Certificado: ' . $item[1] . ' eliminada correctamente.';
+					$messages[] = 'Venta con certificado [' . $item[1] . '] eliminada correctamente.';
 				} catch (\Exception $e) {
-					$errors[] = 'Venta - Certificado: ' . $item[1] . ' no eliminada.';
+					$errors[] = 'Venta con certificado [' . $item[1] . '] no se pudo eliminar.';
 				}
 			}
 		}
