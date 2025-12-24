@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\StatusController;
 use App\Http\Controllers\Api\RolesAndPermissionsController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/version', [AuthController::class, 'version'])->name('version');
@@ -28,4 +29,6 @@ Route::middleware('auth:api')->group(function () {
 	Route::get('/campaigns', [CampaignController::class, 'index']);
 	//	Estatus
 	Route::get('/statuses', [StatusController::class, 'index']);
+	//	Usuarios
+	Route::get('/users', [UserController::class, 'index']);
 });

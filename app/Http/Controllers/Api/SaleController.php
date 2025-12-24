@@ -11,6 +11,8 @@ use App\Models\Status;
 use App\Http\Requests\Sales\GetDatesRequest;
 use App\Http\Requests\Sales\SearchRequest;
 use App\Http\Requests\Sales\DeleteRequest;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SaleController extends Controller
 {
@@ -78,16 +80,12 @@ class SaleController extends Controller
 	public function search(SearchRequest $request)
 	{
 		$request->validated();
-		$sales = [];
-		$sales_data = [];
-		$start_date_sale = $request->input('start_date_sale', '');
-		$end_date_sale = $request->input('end_date_sale', '');
-		$start_date_val = $request->input('start_date_val', '');
-		$end_date_val = $request->input('end_date_val', '');
+		$sale_date = $request->input('sale_date', '');
 		$campaigns = $request->input('campaigns', []);
 		$status = $request->input('status', []);
-		$sig = $request->input('sig', '');
-		$policy = $request->input('policy', '');
+		$databasesRTMK = ['banorte_rtmk'];
+		$sales_data = [];
+		$sales = [];
 
 		//	Obtener campañas
 		$all_campaigns = (int)$campaigns[0];
@@ -109,52 +107,67 @@ class SaleController extends Controller
 
 		// Lectura de base de datos
 		foreach ($query_campaigns as $campaign) {
-			$tmp = null;
 			$db = app(DataBasesServices::class)->connectionTo($campaign->db_name);
-			if (!$db) continue;
+			if (!$db) {
+				continue;
+			}
+			// Campos dinámicos de cliente / asegurado
 			$data_client = CustomerData::getCDBySale($campaign->db_name);
+			// Validar existencia de columna poliza_captura
+			$isBntRtmk = in_array($campaign->db_name, $databasesRTMK);
+			// Select dinámico
+			$select = [
+				'ventas.certificado as certificado',
+				'clientes.id_cliente',
+				'clientes.id_predictivo',
+				'clientes.vendor_id as sig',
+				'catalogo_calificaciones_validacion.descripcion_grupo as estatus',
+				'catalogo_calificaciones_validacion.calificacion as calificacion',
+				// Cliente / asegurado
+				DB::raw($data_client['cliente']),
+				DB::raw($data_client['asegurado']),
+				// Agente
+				DB::raw("CONCAT_WS(' ', usuarios.nombre, usuarios.paterno, usuarios.materno) as agente"),
+				// Metadata
+				DB::raw("'{$campaign->name}' as campaign"),
+				DB::raw("'{$campaign->system_name}' as app"),
+				DB::raw("'{$campaign->db_name}' as base"),
+			];
+			//
+			if ($isBntRtmk) {
+				$select[] = DB::raw("'' as poliza");
+				$select[] = DB::raw("CONCAT_WS(' ', ventas.fecha_venta, ventas.hora) as fecha_venta");
+			} else {
+				$select[] = DB::raw("COALESCE(ventas.poliza_captura, '') as poliza");
+				$select[] = DB::raw("CONCAT_WS(' ', ventas.fecha_venta, ventas.hora_venta) as fecha_venta");
+			}
+			// Query
 			$db_sales = $db->table('ventas')
-				->select(
-					'ventas.certificado as certificado',
-					'ventas.validacion1 as status_code',
-					'ventas.poliza_captura as poliza',
-					'ventas.certificado as id_certificado',
-					'clientes.vendor_id as sig',
-					\DB::raw($data_client['cliente']),
-					\DB::raw($data_client['asegurado']),
-					\DB::raw("CONCAT_WS(' ', usuarios.nombre, usuarios.paterno, usuarios.materno) as agente"),
-					\DB::raw("'$campaign->name' as campaign"),
-					\DB::raw("'$campaign->system_name' as app"),
-					\DB::raw("'$campaign->db_name' as base"),
-				);
-			$db_sales->join('usuarios', 'usuarios.id_usuario', '=', 'ventas.id_usuario');
-			$db_sales->join('clientes', 'clientes.id_cliente', '=', 'ventas.id_cliente');
-			if ($sig) {
-				$db_sales->where('clientes.vendor_id', $sig);
-			}
-			if ($policy) {
-				$db_sales->where('poliza_captura', $policy);
-			}
-			if ($start_date_sale && $end_date_sale) {
-				$db_sales->whereBetween('fecha_venta', [$start_date_sale, $end_date_sale]);
-			}
-			if ($start_date_val && $end_date_val) {
-				$db_sales->whereBetween('fecha_validacion', [$start_date_val, $end_date_val]);
-			}
+				->join('clientes', 'clientes.id_cliente', '=', 'ventas.id_cliente')
+				->leftJoin('usuarios', 'usuarios.id_usuario', '=', 'ventas.id_usuario')
+				->leftJoin('catalogo_calificaciones_validacion', 'catalogo_calificaciones_validacion.id_calificacion', '=', 'ventas.validacion2')
+				->select($select)
+				->where('ventas.fecha_venta', $sale_date);
+			//
 			if ($query_status) {
-				$db_sales->whereIn('validacion1', $query_status->pluck('code')->toArray());
+				$db_sales->whereIn(
+					'ventas.validacion1',
+					$query_status->pluck('code')->toArray()
+				);
 			}
+			//
 			$tmp = $db_sales->count();
 			if ($tmp) {
-				$sales_data = $db_sales->get();
+				$sales_data[] = $db_sales->get();
 			}
 		}
-
-		foreach ($sales_data as $item) {
-			$statusInfo = $statusMap->get($item->status_code);
-			$item->estatus = $statusInfo->name ?? null;
-			$sales[] = $item;
+	
+		foreach ($sales_data as $items) {
+			foreach ($items as $item) {
+				$sales[] = $item;
+			}
 		}
+		
 		return response()->json($sales, 200);
 	}
 

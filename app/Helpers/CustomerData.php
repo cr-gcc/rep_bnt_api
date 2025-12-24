@@ -27,7 +27,7 @@ class CustomerData
 	//	SAM MEXICO
 	const SAM_MEXICO_SALES = [
 		"cliente" => "ventas.nombre as cliente",
-		"asegurado" => "ventas.benneficiario as asegurado",
+		"asegurado" => "ventas.beneficiario as asegurado",
 	];
 	//	RTKM
 	const RTKM_SALES = [
