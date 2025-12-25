@@ -8,6 +8,7 @@ use App\Helpers\CustomerData;
 use App\Services\DataBasesServices;
 use App\Models\Campaign;
 use App\Models\Status;
+use App\Models\LogDeletedSale;
 use App\Http\Requests\Sales\GetDatesRequest;
 use App\Http\Requests\Sales\SearchRequest;
 use App\Http\Requests\Sales\DeleteRequest;
@@ -119,7 +120,7 @@ class SaleController extends Controller
 			$select = [
 				'ventas.certificado as certificado',
 				'clientes.id_cliente',
-				'clientes.id_predictivo',
+				'clientes.id_predictivo as lead_id',
 				'clientes.vendor_id as sig',
 				'catalogo_calificaciones_validacion.descripcion_grupo as estatus',
 				'catalogo_calificaciones_validacion.calificacion as calificacion',
@@ -161,62 +162,89 @@ class SaleController extends Controller
 				$sales_data[] = $db_sales->get();
 			}
 		}
-	
+
 		foreach ($sales_data as $items) {
 			foreach ($items as $item) {
 				$sales[] = $item;
 			}
 		}
-		
+
 		return response()->json($sales, 200);
 	}
 
 	public function delete(DeleteRequest $request)
 	{
 		$request->validated();
-
-		$commond_fields = "id_producto, certificado, id_plan, id_cobertura, id_tipo_persona, precio_plan, poliza_bancomer, num_operacion, tipo_pago, paterno, materno, nombres, nombres2, fecha_nacimiento, id_estado_nac, id_nacionalidad, id_ocupacion_tipo, id_ocupacion, edad, sexo, estado_civil, id_parentesco, rfc, calle, numero_exterior, numero_interior, ecalle, colonia, ciudad, municipio_ciudad, estado, cp, id_horario, lada1, telefono1, lada2, telefono2, telcel, mail1, mail2, tdc, vencimiento_tdc, tipo_tdc, id_banco, codseg, titular_tdc, aplicaTDCadicional, tdc_adi, vencimiento_tdc_adi, tipo_tdc_adi, id_banco_adi, codseg_adi, titular_tdc_adi, account_type, fecha_venta, hora_venta, fecha_valida, hora_valida, fecha_envio, estatus_poliza, id_usuario, ip_usuario, id_validador, ip_validador, id_supervisor, id_cliente, aceptaVenta, tipo_venta, validacion1, validacion2, comentario_validacion, comentario_validacion_2, sip_extension, user_predictivo, aplicaAsegurado, nombre_adi, nombre_adi2, paterno_adi, materno_adi, fecha_nacimiento_adi, sexo_adi, edad_adi, rfc_adi, lada3, telefono3, lada4, telefono4, no_autorizacion, id_plaforma_cobro, estado_civil_ase, start_time, end_time, length_in_sec, filename, location, inicio_validacion, fchnactecleo, fchnacDigitos, fchnactecleo_motivo, utilizada, fecha_utilizada, tipo_venta_validacion, poliza_captura, llamada, recording_id, vicidial_id";
-		$all_fields = "INSERT INTO ventas_eliminadas SELECT * FROM ventas WHERE certificado = ?";
-		$select_fields = "INSERT INTO ventas_eliminadas (" . $commond_fields . ") SELECT " . $commond_fields . " FROM ventas WHERE certificado = ?";
-		$all_fields_db = ['banorte_plenitud', 'banorte_tdc_arquetipos', 'banorte_rastreator', 'banorte_auto_seguro', 'banorte_clientes_auto', 'banorte_segurosdeautomexico'];
-		$select_fields_db = ['banorte_captacion_pvh', 'banorte_consumo_pvh', 'banorte_nomina_pvh', 'banorte_pvh'];
-		$fields = "";
-		$ok_flag = true;
+		$delete_list = $request->input('list', []);
 		$errors = [];
 		$messages = [];
-
-		$delete_list = $request->input('list', []);
+		$status = 400;
+		
+		// Agrupacion de certificados por base de datos
+		$grouped_by_db = [];
 		foreach ($delete_list as $item) {
-			$db = app(DataBasesServices::class)->connectionTo($item[0]);
-			//	Verificar si la base de datos es correcta
-			if (in_array($item[0], $select_fields_db)) {
-				$fields = $select_fields;
-				$ok_flag = true;
-			} else if (in_array($item[0], $all_fields_db)) {
-				$fields = $all_fields;
-				$ok_flag = true;
-			} else {
-				$ok_flag = false;
+			$db_name = $item[0];
+			$certificado = $item[1];
+			
+			if (!isset($grouped_by_db[$db_name])) {
+				$grouped_by_db[$db_name] = [];
 			}
-			//	Si se puede eliminar	
-			if ($ok_flag) {
+			$grouped_by_db[$db_name][] = $certificado;
+		}
+
+		// Procesamiento de cada base de datos
+		foreach ($grouped_by_db as $db_name => $certificados) {
+			$db = app(DataBasesServices::class)->connectionTo($db_name);
+			if (!$db) {
+				foreach ($certificados as $certificado) {
+					$errors[] = 'No se pudo conectar a la base de datos para el certificado [' . $certificado . '].';
+				}
+				continue;
+			}
+			// Procesamiento de cada certificado para esta base de datos
+			foreach ($certificados as $certificado) {
+				$certificado = (int)$certificado;
 				try {
-					//	Insertar en la base de datos de eliminados
-					$db->statement($fields, [$item[1]]);
-					//	Eliminar de la base de datos
-					$db->table('ventas')
-						->where('certificado', $item[1])
-						->delete();
-					$messages[] = 'Venta con certificado [' . $item[1] . '] eliminada correctamente.';
+					// Hacer una copia de la venta
+					$backup = $db->table('ventas')->where('certificado', $certificado)->first();
+					if ($backup) {
+						$backupArray = (array) $backup;
+						//
+						if (isset($backupArray['indicador_venta'])) {
+							unset($backupArray['indicador_venta']);
+						}
+						if (isset($backupArray['certificado_venta_principal'])) {
+							unset($backupArray['certificado_venta_principal']);
+						}
+						if (isset($backupArray['fecha_envio']) && $backupArray['fecha_envio'] === '0000-00-00') {
+							$backupArray['fecha_envio'] = null;
+						}
+						// Insertar en ventas_eliminadas
+						$db->table('ventas_eliminadas')->insert($backupArray);
+						// Eliminar de la tabla ventas
+						$db->table('ventas')
+							->where('certificado', $certificado)
+							->delete();
+						$messages[] = 'Venta [' . $certificado . '] fue eliminada de la base [' . $db_name . '].';
+						// Insertar en log_deleted_sales
+						LogDeletedSale::create([
+							'user_id' => auth()->user()->id,
+							'data_base' => $db_name,
+							'certificate' => $certificado,
+						]);
+					} else {
+						$errors[] = 'Venta [' . $certificado . '] no encontrada en la base  [' . $db_name . '].';
+					}
+					$status = 200;
 				} catch (\Exception $e) {
-					$errors[] = 'Venta con certificado [' . $item[1] . '] no se pudo eliminar.';
+					$errors[] = 'Venta [' . $certificado . '] de la base [' . $db_name . ']' . 'no se pudo eliminar'. $e->getMessage();
 				}
 			}
 		}
-		//
+		
 		return response()->json([
 			'messages' => $messages,
 			'errors' => $errors,
-		]);
+		], $status);
 	}
 }

@@ -13,7 +13,8 @@ class RolesAndPermissionsController extends Controller
 {
 	public function roles()
 	{
-		$roles = Role::with('permissions')->get();
+		$roles = Role::with('permissions')->orderBy('name')
+			->get();
 		return response()->json($roles, 200);
 	}
 
@@ -41,12 +42,7 @@ class RolesAndPermissionsController extends Controller
 		$role_id = $request->input('role_id');
 		$permissions = $request->input('permissions_id');
 		$campaigns = $request->input('campaigns_id');
-		\Log::info($role_id);
-		\Log::info($permissions);
-		\Log::info($campaigns);	
 		try {
-			\Log::info('entro al try');
-			
 			$role = Role::find($role_id);
 			// syncPermissions will add new permissions AND remove old ones (complete replacement)
 			$role->syncPermissions($permissions);
@@ -55,7 +51,6 @@ class RolesAndPermissionsController extends Controller
 			$role->load('permissions', 'campaigns');
 			return new RoleAccessControlResource($role);
 		} catch (\Exception $e) {
-			\Log::info($e);
 			return response()->json($e, 500);
 		}
 	}
