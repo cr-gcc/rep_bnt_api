@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Http\Request;
+use App\Models\Role;
+use App\Http\Requests\User\UpdateUserRequest;
 
 class UserController extends Controller
 {
@@ -52,9 +53,32 @@ class UserController extends Controller
 	/**
 	 * Update the specified resource in storage.
 	 */
-	public function update(Request $request, string $id)
+	public function update(UpdateUserRequest $request, string $id)
 	{
-		//
+		$data  = [];
+		$status = 400;
+		//	Usuario a actualizar
+		try {
+			$user = User::findOrFail($id);
+			$user->update($request->validated());
+			$role_id = $request->role_id;	
+			$role = Role::find($role_id);
+			//	Actualiza roles y permisos
+			$user->assignRole($role);
+			$data = [
+				'data' => $user,
+				'message' => 'Usuario actualizado correctamente',
+			];
+			$status = 200;
+		} catch (\Exception $e) {
+			$data = [
+				'data' => [],
+				'message' => 'Error al actualizar el usuario.'
+			];
+			$status = 500;
+		}
+		
+		return response()->json($data, $status);
 	}
 
 	/**

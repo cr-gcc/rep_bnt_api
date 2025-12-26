@@ -30,5 +30,5 @@ Route::middleware('auth:api')->group(function () {
 	//	Estatus
 	Route::get('/statuses', [StatusController::class, 'index']);
 	//	Usuarios
-	Route::get('/users', [UserController::class, 'index']);
+	Route::resource('/users', UserController::class);
 });

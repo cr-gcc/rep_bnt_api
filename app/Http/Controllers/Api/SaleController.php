@@ -20,8 +20,6 @@ class SaleController extends Controller
 
 	public function getGeneralCounts(GetDatesRequest $request)
 	{
-		$request->validated();
-		//
 		$start_date = $request->start_date;
 		$end_date =  $request->end_date;
 		$colleccion_campaigns = collect();
@@ -80,7 +78,6 @@ class SaleController extends Controller
 
 	public function search(SearchRequest $request)
 	{
-		$request->validated();
 		$sale_date = $request->input('sale_date', '');
 		$campaigns = $request->input('campaigns', []);
 		$status = $request->input('status', []);
@@ -174,7 +171,6 @@ class SaleController extends Controller
 
 	public function delete(DeleteRequest $request)
 	{
-		$request->validated();
 		$delete_list = $request->input('list', []);
 		$errors = [];
 		$messages = [];
