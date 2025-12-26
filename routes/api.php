@@ -15,6 +15,8 @@ Route::middleware('auth:api')->group(function () {
 	//	Autenticacion
 	Route::get('/me', [AuthController::class, 'me']);
 	Route::post('/logout', [AuthController::class, 'logout']);
+	Route::get('/password/reset/{user_id}', [AuthController::class, 'resetPassword']);
+	Route::post('/password/change', [AuthController::class, 'changePassword']);
 	//	Roles-Permisos
 	Route::get('/roles', [RolesAndPermissionsController::class, 'roles']);
 	Route::get('/permissions', [RolesAndPermissionsController::class, 'permissions']);

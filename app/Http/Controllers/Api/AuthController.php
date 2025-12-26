@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Http\Requests\User\ChangePasswordRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
@@ -61,4 +64,71 @@ class AuthController extends Controller
 	{
 		return response()->json($request->user());
 	}
+	//
+	public function resetPassword($user_id)
+	{
+		$status = 400;
+		$data = [];
+		$user = User::findOrFail($user_id);
+		if ($user) {
+			try {
+				$default_password = config('app.default_password');
+				$user->password = Hash::make($default_password);
+				$user->change_password = 0;
+				$user->save();
+				$data = [
+					'message' => 'Contraseña cambiada exitosamente',
+				];
+				$status = 200;
+			} catch (\Exception $e) {
+				$data = [
+					'error' => 'Error al cambiar la contraseña',
+				];
+				$status = 500;
+			}
+		}
+		else {
+			$data = [
+				'error' => 'Usuario no encontrado',
+			];
+			$status = 404;
+		}
+		return response()->json($data, $status);
+	}
+
+	public function changePassword(ChangePasswordRequest $request)
+	{
+		$status = 400;
+		$data = [];
+		$user_id = Auth::user()->id;
+		$user = User::findOrFail($user_id);
+		if ($user) {
+			try {
+				$password = $request->password;
+				$user->password = Hash::make($password);
+				$user->change_password = 1;
+				$user->save();
+				$data = [
+					'data' => $user,
+					'message' => 'Contraseña cambiada exitosamente',
+				];
+				$status = 200;
+			} catch (\Exception $e) {
+				$data = [
+					'data' => [],
+					'error' => 'Error al cambiar la contraseña',
+				];
+				$status = 500;
+			}
+		}
+		else {
+			$data = [
+				'data' => [],
+				'error' => 'Usuario no encontrado',
+			];
+			$status = 404;
+		}
+		return response()->json($data, $status);
+	}
+	
 }

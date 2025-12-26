@@ -99,6 +99,8 @@ return [
 
     'key' => env('APP_KEY'),
 
+		'default_password' => env('DEFAULT_PASSWORD', '0123456789'),
+
     'previous_keys' => [
         ...array_filter(
             explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
