@@ -26,9 +26,8 @@ class StoreUserRequest extends FormRequest
             'last_name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255|unique:users',
             'user' => 'required|string|max:255|unique:users',
-            'birth_day' => 'required|date',
-						'roles' => 'required|array',
-						'roles.*' => 'exists:roles,id',
+            'birth_date' => 'required|date',
+						'role_id' => 'required|exists:roles,id',
         ];
     }
 
@@ -43,8 +42,8 @@ class StoreUserRequest extends FormRequest
 				'user.required' => 'El usuario es obligatorio',
 				'user.max' => 'El usuario debe tener maximo 255 caracteres',
 				'user.unique' => 'El usuario ya se encuentra registrado',
-				'birth_day.required' => 'La fecha de nacimiento es obligatoria',
-				'roles.required' => 'El rol es obligatorio',
+				'birth_date.required' => 'La fecha de nacimiento es obligatoria',
+				'role_id.required' => 'El rol es obligatorio',
 			];
 		}
 }
