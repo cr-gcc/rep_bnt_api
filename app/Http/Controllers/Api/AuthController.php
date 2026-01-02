@@ -45,10 +45,10 @@ class AuthController extends Controller
 			60 * 24,       // 1 día
 			'/',
 			null,
-			true,        // Secure (HTTPS)
+			false,       // Secure (false para HTTP, true para HTTPS)
 			true,        // HttpOnly
 			false,
-			'Strict'     // SameSite
+			'lax'        // SameSite (lax permite mismo dominio)
 		);
 
 		return response()->json(['user' => $user])->withCookie($cookie);
