@@ -37,6 +37,7 @@ class AuthController extends Controller
 		}
 
 		$user = Auth::user();
+		$user->role = $user->roles->first()->name ?? null;
 		$token = $user->createToken('Vue3App')->accessToken;
 
 		$cookie = cookie(
