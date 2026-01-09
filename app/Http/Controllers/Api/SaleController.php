@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\Schema;
 
 class SaleController extends Controller
 {
-
 	public function getGeneralCounts(GetDatesRequest $request)
 	{
 		$start_date = $request->start_date;
@@ -175,13 +174,13 @@ class SaleController extends Controller
 		$errors = [];
 		$messages = [];
 		$status = 400;
-		
+
 		// Agrupacion de certificados por base de datos
 		$grouped_by_db = [];
 		foreach ($delete_list as $item) {
 			$db_name = $item[0];
 			$certificado = $item[1];
-			
+
 			if (!isset($grouped_by_db[$db_name])) {
 				$grouped_by_db[$db_name] = [];
 			}
@@ -233,11 +232,11 @@ class SaleController extends Controller
 					}
 					$status = 200;
 				} catch (\Exception $e) {
-					$errors[] = 'Venta [' . $certificado . '] de la base [' . $db_name . ']' . 'no se pudo eliminar'. $e->getMessage();
+					$errors[] = 'Venta [' . $certificado . '] de la base [' . $db_name . ']' . 'no se pudo eliminar' . $e->getMessage();
 				}
 			}
 		}
-		
+
 		return response()->json([
 			'messages' => $messages,
 			'errors' => $errors,

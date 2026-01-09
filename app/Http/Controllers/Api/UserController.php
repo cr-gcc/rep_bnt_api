@@ -50,7 +50,7 @@ class UserController extends Controller
 			$role_id = $request->role_id;
 			$role = Role::find($role_id);
 			//	Actualiza roles y permisos
-			$user->assignRole($role);
+			$user->changeRole($role);
 			$data = [
 				'data' => $user,
 				'message' => 'Usuario creado correctamente',
@@ -63,7 +63,7 @@ class UserController extends Controller
 			];
 			$status = 500;
 		}
-		
+
 		return response()->json($data, $status);
 	}
 
@@ -94,10 +94,10 @@ class UserController extends Controller
 		try {
 			$user = User::findOrFail($id);
 			$user->update($request->validated());
-			$role_id = $request->role_id;	
+			$role_id = $request->role_id;
 			$role = Role::find($role_id);
 			//	Actualiza roles y permisos
-			$user->assignRole($role);
+			$user->changeRole($role);
 			$data = [
 				'data' => $user,
 				'message' => 'Usuario actualizado correctamente',
@@ -110,7 +110,7 @@ class UserController extends Controller
 			];
 			$status = 500;
 		}
-		
+
 		return response()->json($data, $status);
 	}
 

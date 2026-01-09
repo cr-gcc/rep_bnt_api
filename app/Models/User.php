@@ -53,4 +53,13 @@ class User extends Authenticatable
 			'password' => 'hashed',
 		];
 	}
+
+	/**
+	 * Cambia el rol del usuario (1 usuario = 1 rol)
+	 */
+	public function changeRole(string|int $role): void
+	{
+		$this->roles()->detach();
+		$this->syncRoles([$role]);
+	}
 }
