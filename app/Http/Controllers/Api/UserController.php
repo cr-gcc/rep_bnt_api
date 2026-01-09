@@ -97,7 +97,7 @@ class UserController extends Controller
 			$role_id = $request->role_id;
 			$role = Role::find($role_id);
 			//	Actualiza roles y permisos
-			$user->changeRole($role);
+			$user->changeRole($role->id);
 			$data = [
 				'data' => $user,
 				'message' => 'Usuario actualizado correctamente',
