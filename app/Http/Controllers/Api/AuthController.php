@@ -26,18 +26,18 @@ class AuthController extends Controller
 
 		// Intentar autenticación primero con email
 		$credentials = ['email' => $identifier, 'password' => $password];
-		
+
 		if (!Auth::attempt($credentials)) {
 			// Si falla, intentar con el campo 'user' (RFC)
 			$credentials = ['user' => $identifier, 'password' => $password];
-			
+
 			if (!Auth::attempt($credentials)) {
 				return response()->json(['message' => 'Credenciales inválidas'], 401);
 			}
 		}
 
 		$user = Auth::user();
-		$user->role = $user->roles->first()->name ?? null;
+		$user->permissions = $user->getAllPermissions()->pluck('name');
 		$token = $user->createToken('Vue3App')->accessToken;
 
 		$cookie = cookie(
@@ -63,6 +63,7 @@ class AuthController extends Controller
 	//
 	public function me(Request $request)
 	{
+		$request->user()->load('roles.permissions');
 		return response()->json($request->user());
 	}
 	//
@@ -87,8 +88,7 @@ class AuthController extends Controller
 				];
 				$status = 500;
 			}
-		}
-		else {
+		} else {
 			$data = [
 				'error' => 'Usuario no encontrado',
 			];
@@ -121,8 +121,7 @@ class AuthController extends Controller
 				];
 				$status = 500;
 			}
-		}
-		else {
+		} else {
 			$data = [
 				'data' => [],
 				'error' => 'Usuario no encontrado',
@@ -131,5 +130,4 @@ class AuthController extends Controller
 		}
 		return response()->json($data, $status);
 	}
-	
 }

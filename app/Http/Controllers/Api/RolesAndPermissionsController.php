@@ -32,7 +32,9 @@ class RolesAndPermissionsController extends Controller
 
 	public function permissionsByGroup()
 	{
-		$permissions = Permission::all()->groupBy('group');
+		$permissions = Permission::orderBy('group')
+			->get()
+			->groupBy('group');
 		return response()->json($permissions, 200);
 	}
 
