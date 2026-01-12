@@ -15,11 +15,13 @@ class RolesAndPermissionsController extends Controller
 	public function roles()
 	{
 		$levels = [];
-		if (Auth::user()->hasPermissionTo('nivel-2')) {
+		if (Auth::user()->hasRole('Super-Admin')) {
+			$levels = [];
+		} else if (Auth::user()->can('nivel-2')) {
 			$levels = ['nivel-1', 'nivel-2'];
-		} else if (Auth::user()->hasPermissionTo('nivel-3')) {
+		} else if (Auth::user()->can('nivel-3')) {
 			$levels = ['nivel-1', 'nivel-2', 'nivel-3'];
-		} else if (Auth::user()->hasPermissionTo('nivel-4')) {
+		} else if (Auth::user()->can('nivel-4')) {
 			$levels = ['nivel-1', 'nivel-2', 'nivel-3', 'nivel-4'];
 		} else {
 			$levels = [];
