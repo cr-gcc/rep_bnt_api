@@ -8,13 +8,18 @@ use App\Models\Campaign;
 use Spatie\Permission\Models\Permission;
 use App\Http\Requests\RolesAndPermissions\RolPermissionsCampaignsRequest;
 use App\Http\Resources\RoleAccessControlResource;
+use Illuminate\Support\Facades\Auth;
 
 class RolesAndPermissionsController extends Controller
 {
 	public function roles()
 	{
-		$roles = Role::with('permissions')->orderBy('name')
-			->get();
+		$query = Role::with('permissions')->orderBy('name');
+
+		if (! Auth::user()->hasRole('Super-Admin')) {
+			$query->where('name', '!=', 'Super-Admin');
+		}
+		$roles = $query->get();
 		return response()->json($roles, 200);
 	}
 
