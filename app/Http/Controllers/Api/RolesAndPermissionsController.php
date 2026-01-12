@@ -67,11 +67,15 @@ class RolesAndPermissionsController extends Controller
 		$permissions = $request->input('permissions_id');
 		$campaigns = $request->input('campaigns_id');
 		try {
-			$role = Role::find($role_id);
-			// syncPermissions will add new permissions AND remove old ones (complete replacement)
-			$role->syncPermissions($permissions);
+			$role = Role::findOrFail($role_id);
+			
+			// syncPermissions requires Permission names or models, not just IDs
+			$permissionModels = Permission::whereIn('id', $permissions)->get();
+			$role->syncPermissions($permissionModels);
+			
 			// sync will add new campaigns AND remove old ones (complete replacement)
 			$role->campaigns()->sync($campaigns);
+			
 			$role->load('permissions', 'campaigns');
 			return new RoleAccessControlResource($role);
 		} catch (\Exception $e) {
