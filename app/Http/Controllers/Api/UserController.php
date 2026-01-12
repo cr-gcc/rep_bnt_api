@@ -44,7 +44,7 @@ class UserController extends Controller
 				'email' => $request->email,
 				'user' => $request->user,
 				'password' => Hash::make($password),
-				'birthday' => $request->birthday,
+				'birth_date' => $request->birth_date,
 			];
 			$user = User::create($user_data);
 			$role_id = $request->role_id;
@@ -97,7 +97,7 @@ class UserController extends Controller
 			$role_id = $request->role_id;
 			$role = Role::find($role_id);
 			//	Actualiza roles y permisos
-			$user->changeRole($role->id);
+			$user->changeRole($role);
 			$data = [
 				'data' => $user,
 				'message' => 'Usuario actualizado correctamente',

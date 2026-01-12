@@ -57,9 +57,8 @@ class User extends Authenticatable
 	/**
 	 * Cambia el rol del usuario (1 usuario = 1 rol)
 	 */
-	public function changeRole(string|int $roleId): void
+	public function changeRole(Role $role): void
 	{
-		$this->roles()->detach();
-		$this->syncRoles([$roleId]);
+		$this->syncRoles($role->name);
 	}
 }
