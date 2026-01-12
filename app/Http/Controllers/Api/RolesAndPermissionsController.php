@@ -14,12 +14,27 @@ class RolesAndPermissionsController extends Controller
 {
 	public function roles()
 	{
-		$query = Role::with('permissions')->orderBy('name');
-
-		if (! Auth::user()->hasRole('Super-Admin')) {
-			$query->where('name', '!=', 'Super-Admin');
+		$levels = [];
+		if (Auth::user()->hasPermissionTo('nivel-2')) {
+			$levels = ['nivel-1', 'nivel-2'];
+		} else if (Auth::user()->hasPermissionTo('nivel-3')) {
+			$levels = ['nivel-1', 'nivel-2', 'nivel-3'];
+		} else if (Auth::user()->hasPermissionTo('nivel-4')) {
+			$levels = ['nivel-1', 'nivel-2', 'nivel-3', 'nivel-4'];
+		} else {
+			$levels = [];
 		}
-		$roles = $query->get();
+		
+		$query = Role::with('permissions');
+
+		if (!empty($levels)) {
+			$query->whereDoesntHave('permissions', function ($q) use ($levels) {
+				$q->whereIn('name', $levels);
+			});
+		}
+
+		$roles = $query->orderBy('name')->get();
+
 		return response()->json($roles, 200);
 	}
 
