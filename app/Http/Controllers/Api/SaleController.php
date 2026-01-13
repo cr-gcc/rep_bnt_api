@@ -23,8 +23,12 @@ class SaleController extends Controller
 		$end_date =  $request->end_date;
 		$colleccion_campaigns = collect();
 		$totales = collect();
+		//
+		$user = auth()->user();
 		//	Seleccion de campañas
-		$campaigns = Campaign::where('active', true)->get();
+		//	Asumiendo 1 rol por usuario
+		$role = $user->roles->first();
+		$campaigns = $role ? $role->campaigns->where('active', true) : collect();
 		//	Todos los registros
 		foreach ($campaigns as $campaign) {
 			$db = app(DataBasesServices::class)->connectionTo($campaign->db_name);
