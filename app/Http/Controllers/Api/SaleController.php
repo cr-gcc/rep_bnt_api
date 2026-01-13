@@ -46,7 +46,7 @@ class SaleController extends Controller
 			]);
 		}
 		//	Filtrado
-		$totales = $colleccion_campaigns->map(function ($data, $name) {
+		$campaign_counts = $colleccion_campaigns->map(function ($data, $name) {
 			$statusMap = Status::pluck('slug', 'code')->toArray();
 			$sales = $data['sales'];
 			$app = $data['system_name'];
@@ -76,7 +76,24 @@ class SaleController extends Controller
 			return $result;
 		})->values();
 
-		return response()->json($totales, 200);
+
+		$tmp_totales = [
+			'pen' => $campaign_counts->sum('pen'),
+			'ap' => $campaign_counts->sum('ap'),
+			'nap' => $campaign_counts->sum('nap'),
+			'hold' => $campaign_counts->sum('hold'),
+			'aop' => $campaign_counts->sum('aop'),
+			'rec' => $campaign_counts->sum('rec'),
+			'total' => $campaign_counts->sum('total')
+		];
+		$pnap_total = ($tmp_totales['total'] > 0 && $tmp_totales['nap'] > 0) ? round(($tmp_totales['nap'] / $tmp_totales['total']) * 100, 2) : 0;
+		$tmp_totales['percent_nap'] = $pnap_total;
+		//
+		$data = [
+			'counts' => $campaign_counts,
+			'totals' => $tmp_totales
+		];
+		return response()->json($data, 200);
 	}
 
 	public function search(SearchRequest $request)
