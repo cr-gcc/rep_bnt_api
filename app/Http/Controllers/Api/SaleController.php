@@ -120,9 +120,6 @@ class SaleController extends Controller
 			$query_status = Status::whereIn('id', $status)->get();
 		}
 
-		// Crear mapeo de status: code => objeto Status
-		$statusMap = $query_status->keyBy('code');
-
 		// Lectura de base de datos
 		foreach ($query_campaigns as $campaign) {
 			$db = app(DataBasesServices::class)->connectionTo($campaign->db_name);
