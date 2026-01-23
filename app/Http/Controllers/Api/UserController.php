@@ -7,16 +7,28 @@ use App\Models\User;
 use App\Models\Role;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
+use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
 	/**
 	 * Display a listing of the resource.
 	 */
-	public function index()
+	public function index(Request $request)
 	{
-		$users = User::with('roles')->get();
+		$users = [];
+		$user = $request->user();
+		if ($user->can('nivel-1')) {
+			$users = User::with('roles')->get();
+		} else if ($user->can('nivel-2')) {
+			$users = User::with('roles')->permission(['nivel-2', 'nivel-3', 'nivel-4'])->get();
+		} else if ($user->can('nivel-3')) {
+			$users = User::with('roles')->permission(['nivel-3', 'nivel-4'])->get();
+		} else {
+			$users = User::with('roles')->permission(['nivel-4'])->get();
+		}
 		return response()->json($users, 200);
 	}
 

@@ -22,7 +22,6 @@ class SaleController extends Controller
 		$start_date = $request->start_date;
 		$end_date =  $request->end_date;
 		$colleccion_campaigns = collect();
-		$totales = collect();
 		//
 		$user = auth()->user();
 		//	Seleccion de campañas
