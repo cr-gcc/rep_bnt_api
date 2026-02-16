@@ -249,7 +249,7 @@ class SaleController extends Controller
 					}
 					$status = 200;
 				} catch (\Exception $e) {
-					$errors[] = 'Venta [' . $certificado . '] de la base [' . $db_name . ']' . 'no se pudo eliminar' . $e->getMessage();
+					$errors[] = 'Venta [' . $certificado . '] de la base [' . $db_name . ']' . 'no se pudo eliminar.';
 				}
 			}
 		}

@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\DataBasesServices;
 use App\Models\Campaign;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Http\Request;
 
 class CatalogController extends Controller
 {
