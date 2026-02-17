@@ -28,7 +28,9 @@ class EmailController extends Controller
 		//
 		$all_campaigns = (int)$campaigns[0];
 		if ($all_campaigns === 0) {
-			$query_campaigns = Campaign::where('active', true)->get();
+			$query_campaigns = Campaign::where('active', true)
+				->where('id', '<', 7)
+				->get();
 		} else {
 			$query_campaigns = Campaign::whereIn('id', $campaigns)->get();
 		}
@@ -60,16 +62,22 @@ class EmailController extends Controller
 						$table . '.id_cliente as cliente',
 						$table . '.id_certificado as certificado',
 						$table . '.updated_at as fecha',
-						'ventas.nombres as nombre',
 						'ventas.paterno as paterno',
 						'ventas.materno as materno',
 						'ventas.certificado as certificado_venta',
 						'ventas.id_cliente as id_cliente_venta',
-						'ventas.mail1 as correo',
-						'ventas.mail2 as servidor',
 						DB::raw("'" . $system_name . "' as camp"),
 						DB::raw("'" . $email_type . "' as tipo")
 					);
+					if ($campaign->db_name == 'banorte_tdc_arquetipos') {
+						$query->addSelect('ventas.nombre as nombre',);
+						$query->addSelect('ventas.correo as correo');
+					} else {
+						$query->addSelect('ventas.nombres as nombre',);
+						$query->addSelect(
+							DB::raw("CONCAT(ventas.mail1, '@', ventas.mail2) as correo")
+						);
+					}
 					$data_email_list[] = $query->get();
 				} else {
 					$query->select(DB::raw('COUNT(*) as total'));
