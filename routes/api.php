@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\StatusController;
 use App\Http\Controllers\Api\RolesAndPermissionsController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\EmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/version', [AuthController::class, 'version'])->name('version');
@@ -33,4 +35,9 @@ Route::middleware('auth:api')->group(function () {
 	Route::get('/statuses', [StatusController::class, 'index']);
 	//	Usuarios
 	Route::resource('/users', UserController::class);
+	//	Catalogos
+	Route::get('/catalogs/{db_id}', [CatalogController::class, 'getTablesFromDB']);
+	Route::get('/catalogs/{db_id}/search/{table_name}', [CatalogController::class, 'getTableFromDB']);
+	//	Emails
+	Route::post('/email-sent-stats', [EmailController::class, 'emailsSentStats']);
 });

@@ -8,13 +8,35 @@ use App\Models\Campaign;
 use Spatie\Permission\Models\Permission;
 use App\Http\Requests\RolesAndPermissions\RolPermissionsCampaignsRequest;
 use App\Http\Resources\RoleAccessControlResource;
+use Illuminate\Support\Facades\Auth;
 
 class RolesAndPermissionsController extends Controller
 {
 	public function roles()
 	{
-		$roles = Role::with('permissions')->orderBy('name')
-			->get();
+		$levels = [];
+		if (Auth::user()->hasRole('Super-Admin')) {
+			$levels = [];
+		} else if (Auth::user()->can('nivel-2')) {
+			$levels = ['nivel-1', 'nivel-2'];
+		} else if (Auth::user()->can('nivel-3')) {
+			$levels = ['nivel-1', 'nivel-2', 'nivel-3'];
+		} else if (Auth::user()->can('nivel-4')) {
+			$levels = ['nivel-1', 'nivel-2', 'nivel-3', 'nivel-4'];
+		} else {
+			$levels = [];
+		}
+		
+		$query = Role::with('permissions');
+
+		if (!empty($levels)) {
+			$query->whereDoesntHave('permissions', function ($q) use ($levels) {
+				$q->whereIn('name', $levels);
+			});
+		}
+
+		$roles = $query->orderBy('name')->get();
+
 		return response()->json($roles, 200);
 	}
 
@@ -45,11 +67,15 @@ class RolesAndPermissionsController extends Controller
 		$permissions = $request->input('permissions_id');
 		$campaigns = $request->input('campaigns_id');
 		try {
-			$role = Role::find($role_id);
-			// syncPermissions will add new permissions AND remove old ones (complete replacement)
-			$role->syncPermissions($permissions);
+			$role = Role::findOrFail($role_id);
+			
+			// syncPermissions requires Permission names or models, not just IDs
+			$permissionModels = Permission::whereIn('id', $permissions)->get();
+			$role->syncPermissions($permissionModels);
+			
 			// sync will add new campaigns AND remove old ones (complete replacement)
 			$role->campaigns()->sync($campaigns);
+			
 			$role->load('permissions', 'campaigns');
 			return new RoleAccessControlResource($role);
 		} catch (\Exception $e) {

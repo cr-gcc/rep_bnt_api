@@ -22,9 +22,12 @@ class SaleController extends Controller
 		$start_date = $request->start_date;
 		$end_date =  $request->end_date;
 		$colleccion_campaigns = collect();
-		$totales = collect();
+		//
+		$user = auth()->user();
 		//	Seleccion de campañas
-		$campaigns = Campaign::where('active', true)->get();
+		//	Asumiendo 1 rol por usuario
+		$role = $user->roles->first();
+		$campaigns = $role ? $role->campaigns->where('active', true) : collect();
 		//	Todos los registros
 		foreach ($campaigns as $campaign) {
 			$db = app(DataBasesServices::class)->connectionTo($campaign->db_name);
@@ -42,7 +45,7 @@ class SaleController extends Controller
 			]);
 		}
 		//	Filtrado
-		$totales = $colleccion_campaigns->map(function ($data, $name) {
+		$campaign_counts = $colleccion_campaigns->map(function ($data, $name) {
 			$statusMap = Status::pluck('slug', 'code')->toArray();
 			$sales = $data['sales'];
 			$app = $data['system_name'];
@@ -72,7 +75,24 @@ class SaleController extends Controller
 			return $result;
 		})->values();
 
-		return response()->json($totales, 200);
+
+		$tmp_totales = [
+			'pen' => $campaign_counts->sum('pen'),
+			'ap' => $campaign_counts->sum('ap'),
+			'nap' => $campaign_counts->sum('nap'),
+			'hold' => $campaign_counts->sum('hold'),
+			'aop' => $campaign_counts->sum('aop'),
+			'rec' => $campaign_counts->sum('rec'),
+			'total' => $campaign_counts->sum('total')
+		];
+		$pnap_total = ($tmp_totales['total'] > 0 && $tmp_totales['nap'] > 0) ? round(($tmp_totales['nap'] / $tmp_totales['total']) * 100, 2) : 0;
+		$tmp_totales['percent_nap'] = $pnap_total;
+		//
+		$data = [
+			'counts' => $campaign_counts,
+			'totals' => $tmp_totales
+		];
+		return response()->json($data, 200);
 	}
 
 	public function search(SearchRequest $request)
@@ -98,9 +118,6 @@ class SaleController extends Controller
 		} else {
 			$query_status = Status::whereIn('id', $status)->get();
 		}
-
-		// Crear mapeo de status: code => objeto Status
-		$statusMap = $query_status->keyBy('code');
 
 		// Lectura de base de datos
 		foreach ($query_campaigns as $campaign) {
@@ -232,7 +249,7 @@ class SaleController extends Controller
 					}
 					$status = 200;
 				} catch (\Exception $e) {
-					$errors[] = 'Venta [' . $certificado . '] de la base [' . $db_name . ']' . 'no se pudo eliminar' . $e->getMessage();
+					$errors[] = 'Venta [' . $certificado . '] de la base [' . $db_name . ']' . 'no se pudo eliminar.';
 				}
 			}
 		}
