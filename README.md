@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 🛡️ Reportería — API
 
@@ -55,8 +55,9 @@ Cliente (Vue 3 SPA)
 │         │                            │
 │  ┌──────▼──────────────────────┐     │
 │  │        Controllers (API)    │     │
-│  │  Auth · Sales · Users       │     │
-│  │  Roles · Campaigns · Status │     │
+│  │  Auth · Sales · Users        │     │
+│  │  Roles · Campaigns · Status  │     │
+│  │  Catalogs · Email            │     │
 │  └──────────────┬──────────────┘     │
 │                 │                    │
 │  ┌──────────────▼──────────────┐     │
@@ -95,9 +96,10 @@ Esto permite **escalar horizontalmente** agregando campañas sin modificar códi
 
 - **OAuth2 con Laravel Passport** — emisión y revocación de `access_token`
 - **Tokens almacenados en Cookie `HttpOnly` + `SameSite: Lax`** — protección contra XSS
-- **RBAC granular con Spatie** — permisos agrupados por módulo, asignados por rol
+- **RBAC jerárquico por niveles** — `nivel-1` a `nivel-4`; cada nivel restringe qué roles y usuarios puede gestionar
 - **Autenticación dual** — login por `email` o `RFC` (campo `user`)
 - **Todas las rutas protegidas** bajo middleware `auth:api`
+- **Visibilidad de datos filtrada por nivel** — usuarios y roles expuestos según jerarquía del solicitante
 
 ---
 
@@ -125,12 +127,19 @@ Esto permite **escalar horizontalmente** agregando campañas sin modificar códi
 |---|---|---|---|
 | `GET` | `/api/campaigns` | Listado de campañas activas | ✅ |
 | `GET` | `/api/statuses` | Catálogo de estatus de ventas | ✅ |
+| `GET` | `/api/catalogs/{db_id}` | 🆕 Tablas de catálogo de una campaña | ✅ |
+| `GET` | `/api/catalogs/{db_id}/search/{table_name}` | 🆕 Contenido de una tabla catálogo | ✅ |
+
+### Emails
+| Método | Endpoint | Descripción | Auth |
+|---|---|---|---|
+| `POST` | `/api/email-sent-stats` | 🆕 Estadísticas de envíos de email (24h / 48h) | ✅ |
 
 ### Usuarios & Control de Acceso
 | Método | Endpoint | Descripción | Auth |
 |---|---|---|---|
-| `GET/POST/PUT/DELETE` | `/api/users` | CRUD de usuarios | ✅ |
-| `GET` | `/api/roles` | Roles con permisos | ✅ |
+| `GET/POST/PUT/DELETE` | `/api/users` | CRUD de usuarios (filtrado por nivel) | ✅ |
+| `GET` | `/api/roles` | Roles con permisos (filtrado por nivel) | ✅ |
 | `GET` | `/api/permissions` | Todos los permisos | ✅ |
 | `GET` | `/api/permissions-by-group` | Permisos agrupados por módulo | ✅ |
 | `GET` | `/api/role-access/{role_id}` | Acceso de un rol (permisos + campañas) | ✅ |
@@ -150,10 +159,13 @@ rep_bnt_api/
 │   │   │   ├── UserController.php
 │   │   │   ├── RolesAndPermissionsController.php
 │   │   │   ├── CampaignController.php
-│   │   │   └── StatusController.php
+│   │   │   ├── StatusController.php
+│   │   │   ├── CatalogController.php   # 🆕 Explorador de catálogos multi-DB
+│   │   │   └── EmailController.php     # 🆕 Estadísticas de envío de emails
 │   │   ├── Requests/            # Validación por Form Requests
 │   │   │   ├── Sales/
 │   │   │   ├── User/
+│   │   │   ├── Email/           # 🆕
 │   │   │   └── RolesAndPermissions/
 │   │   ├── Resources/           # API Resources (transformación de respuestas)
 │   │   └── Middleware/
@@ -200,11 +212,25 @@ Consolida en tiempo real los **KPIs de ventas** de todas las campañas activas:
 - CRUD completo con validación por Form Requests
 - Un usuario = un rol (modelo simplificado)
 - Cambio y reset de contraseña integrados
+- **Filtrado por nivel jerárquico**: cada usuario solo ve los usuarios que puede gestionar
 
-### 🛡️ Control de Acceso (RBAC)
+### 🛡️ Control de Acceso (RBAC Jerárquico) — Actualizado
 - Roles con **permisos granulares** agrupados por módulo
 - Roles vinculados a **campañas específicas** (visibilidad de datos)
 - Sincronización atómica de permisos y campañas por rol
+- **4 niveles jerárquicos** (`nivel-1` a `nivel-4`): cada nivel restringe qué roles puede ver y asignar
+- `Super-Admin` tiene visibilidad total sin restricciones
+
+### 📋 Catálogos Dinámicos — 🆕 Nuevo
+- Exploración de tablas catálogo de cualquier base de datos de campaña
+- Filtro automático de tablas con prefijo `catalogo_` (excluye backups)
+- Permite al frontend construir dropdowns dinámicos desde las fuentes de datos reales
+
+### 📧 Estadísticas de Emails — 🆕 Nuevo
+- Reporte de envíos de correos por campaña y periodo
+- Distingue entre emails de **24h** (`log_email_validacion`) y **48h** (`log_email_automatico`)
+- Modos: **totales** por campaña o **listado detallado** de registros enviados
+- Soporte para selects dinámicos según el esquema de cada campaña (campos `nombre`, `correo`)
 
 ---
 
@@ -258,6 +284,9 @@ php artisan test --coverage
 - [x] Buscador de ventas con filtros dinámicos
 - [x] Eliminación auditada con backup y log
 - [x] CRUD de usuarios con control de contraseña
+- [x] **RBAC jerárquico por niveles** (`nivel-1` a `nivel-4`)
+- [x] **Explorador de catálogos** multi-DB
+- [x] **Estadísticas de envío de emails** (24h / 48h)
 - [ ] **Exportación a Excel/CSV** de reportes
 - [ ] **Gráficas y series de tiempo** para el dashboard
 - [ ] **Notificaciones** por umbrales de NAP
